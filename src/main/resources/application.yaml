@@ -1,0 +1,6 @@
+ktor:
+  application:
+    modules:
+      - api.ApplicationKt.module
+  deployment:
+    port: 4000
