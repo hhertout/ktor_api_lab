@@ -1,7 +1,6 @@
 package api.routes
 
 import api.dao.CustomerDao
-import api.models.*
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*

@@ -2,7 +2,6 @@ package api.models
 
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.Table
-import java.util.*
 
 @Serializable
 data class Customer(
