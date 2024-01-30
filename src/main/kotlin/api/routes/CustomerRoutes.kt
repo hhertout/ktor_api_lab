@@ -1,56 +1,39 @@
 package api.routes
 
+import api.dao.CustomerDao
 import api.models.*
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.serialization.Serializable
 
-fun Route.customerRouting() {
+fun Route.customerRouting(dao: CustomerDao) {
+    @Serializable
+    data class NewCustomer(val email: String, val name: String)
+
     route("/customer") {
         get {
-            if (customerStorage.isNotEmpty()) {
-                call.respond(customerStorage)
-            } else {
+            val customers = dao.getCustomers()
+
+            if (customers.isEmpty()) {
                 call.respondText(
                     "No customer found",
                     status = HttpStatusCode.NoContent,
                     contentType = ContentType.Application.Json
                 )
+            } else {
+                call.respond(customers)
             }
-        }
-
-        get("{id?}") {
-            val id = call.parameters["id"] ?: return@get call.respondText(
-                "No id provided",
-                status = HttpStatusCode.BadRequest,
-                contentType = ContentType.Application.Json
-            )
-
-            val customer = customerStorage.find { it.id == id } ?: return@get call.respondText(
-                "Customer not found with id $id",
-                status = HttpStatusCode.NotFound,
-                contentType = ContentType.Application.Json
-            )
-
-            call.respond(customer)
         }
 
         post {
-            val customer = call.receive<Customer>()
-            customerStorage.add(customer)
+
+            val customer = call.receive<NewCustomer>()
+            dao.addCustomer(customer.name, customer.email)
 
             call.respond(customer)
-        }
-
-        delete("{id?}") {
-            val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
-            if (customerStorage.removeIf { it.id == id }) {
-                call.respondText("Customer removed correctly", status = HttpStatusCode.Accepted)
-            } else {
-                call.respondText("Not Found", status = HttpStatusCode.NotFound)
-            }
         }
     }
 }
