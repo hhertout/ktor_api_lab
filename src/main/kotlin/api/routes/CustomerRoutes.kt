@@ -19,6 +19,9 @@ fun Route.customerRouting(dao: CustomerDao) {
     @Serializable
     data class NewCustomer(val email: String, val name: String)
 
+    @Serializable
+    data class UpdateCustomer(val id: Int, val email: String? = null, val name: String? = null)
+
     route("/customer") {
         get {
             try {
@@ -77,6 +80,68 @@ fun Route.customerRouting(dao: CustomerDao) {
                 status = HttpStatusCode.BadRequest,
                 contentType = ContentType.Application.Json,
             )
+        }
+
+        patch {
+            val updateData = call.receive<UpdateCustomer>()
+            try {
+                val customerFound = dao.findCustomerById(updateData.id) ?: return@patch call.respondText(
+                    Json.encodeToString(Message("Customer doesn't exist")),
+                    status = HttpStatusCode.BadRequest,
+                    contentType = ContentType.Application.Json,
+                )
+
+                val res = dao.updateCustomer(
+                    updateData.id,
+                    updateData.name ?: customerFound.name,
+                    updateData.email ?: customerFound.email
+                )
+
+                if (res) {
+                    call.respond(updateData)
+                } else {
+                    call.respondText(
+                        Json.encodeToString(Message("An error occurred")),
+                        contentType = ContentType.Application.Json,
+                        status = HttpStatusCode.InternalServerError
+                    )
+                }
+            } catch (err: Exception) {
+                call.respondText(
+                    Json.encodeToString(Message("An error occurred")),
+                    contentType = ContentType.Application.Json,
+                    status = HttpStatusCode.InternalServerError
+                )
+            }
+        }
+        delete("{id?}") {
+            val id = call.parameters["id"] ?: return@delete call.respondText(
+                Json.encodeToString(Message("No id provided")),
+                status = HttpStatusCode.BadRequest,
+                contentType = ContentType.Application.Json,
+            )
+
+            try {
+                val res = dao.deleteCustomer(id.toInt())
+                if (res) {
+                    call.respondText(
+                        Json.encodeToString(Message("Customer deleted successfully")),
+                        contentType = ContentType.Application.Json,
+                    )
+                } else {
+                    call.respondText(
+                        Json.encodeToString(Message("An error occurred")),
+                        contentType = ContentType.Application.Json,
+                        status = HttpStatusCode.InternalServerError
+                    )
+                }
+            } catch (err: Exception) {
+                call.respondText(
+                    Json.encodeToString(Message("An error occurred")),
+                    contentType = ContentType.Application.Json,
+                    status = HttpStatusCode.InternalServerError
+                )
+            }
         }
     }
 }
